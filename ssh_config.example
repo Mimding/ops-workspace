@@ -1,0 +1,64 @@
+# ============================================================================
+# A 服务器 (中控机) ~/.ssh/config 配置模板
+# 用法：将此文件内容追加或复制到 A 服务器的 ~/.ssh/config，并确保权限为 600
+#       mkdir -p ~/.ssh/sockets ~/.ssh/keys && chmod 700 ~/.ssh ~/.ssh/sockets ~/.ssh/keys
+# ============================================================================
+
+# 全局默认配置（仅针对 node-* 开头的受管服务器生效，避免污染 github.com 等其他连接）
+Host node-*
+    # 1. 连接复用 (ControlMaster)：使用 %C 哈希避免长域名/用户名超出 Unix Socket 104 字节长度限制
+    ControlMaster auto
+    ControlPath ~/.ssh/sockets/%C
+    ControlPersist 10m
+
+    # 2. 保活与超时防止卡死
+    ServerAliveInterval 30
+    ServerAliveCountMax 3
+    ConnectTimeout 10
+
+    # 3. 安全加固：禁止 Agent 转发（防止受管机反跳）、禁止密码交互挂起、仅使用指定私钥
+    ForwardAgent no
+    PasswordAuthentication no
+    KbdInteractiveAuthentication no
+    StrictHostKeyChecking accept-new
+    IdentitiesOnly yes
+
+# ----------------------------------------------------------------------------
+# 下游受管服务器列表 (B, C, D, E, F)
+# 请将 HostName 替换为真实的内网 IP (推荐) 或公网 IP，并放入对应的私钥文件
+# ----------------------------------------------------------------------------
+
+# B 服务器：网关 / Nginx 节点
+Host node-b
+    HostName 10.0.0.12
+    Port 22
+    User ops
+    IdentityFile ~/.ssh/keys/id_ed25519_node_b
+
+# C 服务器：应用节点 1
+Host node-c
+    HostName 10.0.0.13
+    Port 22
+    User ops
+    IdentityFile ~/.ssh/keys/id_ed25519_node_c
+
+# D 服务器：应用节点 2
+Host node-d
+    HostName 10.0.0.14
+    Port 22
+    User ops
+    IdentityFile ~/.ssh/keys/id_ed25519_node_d
+
+# E 服务器：核心数据库节点
+Host node-e
+    HostName 10.0.0.15
+    Port 22
+    User ops
+    IdentityFile ~/.ssh/keys/id_ed25519_node_e
+
+# F 服务器：异步 Worker / 备份节点
+Host node-f
+    HostName 10.0.0.16
+    Port 22
+    User ops
+    IdentityFile ~/.ssh/keys/id_ed25519_node_f

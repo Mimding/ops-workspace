@@ -1,0 +1,13 @@
+# 严禁将任何私钥或敏感凭据提交到 Git 仓库！
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+keys/
+.env
+*.secret
+
+# Ansible 临时文件与日志
+*.retry
+.ansible/
+ansible.log

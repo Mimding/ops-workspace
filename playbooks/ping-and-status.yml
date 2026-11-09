@@ -1,0 +1,26 @@
+---
+# 全集群只读健康巡检剧本 (安全无副作用)
+# 用法: ansible-playbook playbooks/ping-and-status.yml
+- name: "巡检 B C D E F 服务器基础健康状态"
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: "1. 测试 SSH 连通性与 Python 环境"
+      ansible.builtin.ping:
+
+    - name: "2. 采集系统负载、内存与根分区磁盘使用率"
+      ansible.builtin.shell: |
+        echo "=== 主机名与角色: $(hostname) ({{ server_role | default('未定义') }}) ==="
+        echo "[运行时间与负载] $(uptime)"
+        echo "[内存使用情况]"
+        free -h | awk 'NR==1 || NR==2 {print "  " $0}'
+        echo "[磁盘使用情况 (排除 tmpfs/overlay)]"
+        df -h -x tmpfs -x devtmpfs -x overlay | awk 'NR==1 || $5+0 >= 0 {print "  " $0}'
+      args:
+        executable: /bin/bash
+      register: health_report
+      changed_when: false
+
+    - name: "3. 输出巡检报告"
+      ansible.builtin.debug:
+        msg: "{{ health_report.stdout_lines }}"

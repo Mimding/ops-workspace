@@ -1,0 +1,30 @@
+# ============================================================================
+# 下游受管服务器 (B, C, D, E, F) 的 /etc/sudoers.d/ops 最小权限模板
+# 用法：在目标服务器上使用 visudo -f /etc/sudoers.d/ops 写入对应角色的配置
+# 目的：从操作系统层面硬性限制 AI Agent 的权限，而非仅靠 AGENTS.md 软约束！
+# ============================================================================
+
+# 1. 通用只读诊断权限（所有节点 B~F 均可安全授予免密 sudo）
+Cmnd_Alias OPS_READONLY = \
+    /usr/bin/journalctl *, \
+    /usr/bin/systemctl status *, \
+    /usr/bin/systemctl is-active *, \
+    /usr/bin/systemctl list-units *, \
+    /usr/sbin/ss *, \
+    /usr/bin/docker ps *, \
+    /usr/bin/docker stats *, \
+    /usr/bin/docker logs *, \
+    /usr/bin/docker inspect *
+
+# 2. 按节点角色精细化授权（请根据节点角色取消对应行的注释）：
+
+# --- [仅在 B 服务器 (Nginx 网关) 启用] ---
+Cmnd_Alias OPS_GATEWAY = /usr/sbin/nginx -t, /usr/bin/systemctl reload nginx, /usr/bin/systemctl restart nginx
+# ops ALL=(root) NOPASSWD: OPS_READONLY, OPS_GATEWAY
+
+# --- [仅在 C / D 服务器 (应用节点) 启用] ---
+Cmnd_Alias OPS_APP = /usr/bin/docker compose *, /usr/bin/systemctl restart app*
+# ops ALL=(root) NOPASSWD: OPS_READONLY, OPS_APP
+
+# --- [在 E 服务器 (核心数据库) 启用：严禁授予 restart/stop postgresql 或 rm 权限！] ---
+ops ALL=(root) NOPASSWD: OPS_READONLY
